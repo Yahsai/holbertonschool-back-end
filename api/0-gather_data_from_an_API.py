@@ -1,50 +1,49 @@
 #!/usr/bin/python3
 """
-Module: 0-gather_data_from_an_API
+This module uses Python to make requests to a REST API.
+fix
+It fetches data about a specific employee's tasks
+and prints a summary of the tasks completed and the
+titles of the completed tasks.
 """
-
 import requests
 import sys
 
 
-def fetch_todo_list_progress(employee_id):
-    """
-    Fetches TODO list progress for a given employee ID from a REST API.
+# Get the employee ID from the command line arguments
+employee_id = sys.argv[1]
 
-    Args:
-        employee_id (int): The ID of the employee.
+# Send a GET request to the API to get the user data
+user_response = requests.get(
+    'https://jsonplaceholder.typicode.com/users/' + employee_id)
 
-    Returns:
-        None
-    """
-    url = 'https://jsonplaceholder.typicode.com/users/{}'.format(employee_id)
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("Error: Unable to fetch data from the API")
-        return
+# Parse the response data as JSON
+data = user_response.json()
 
-    employee_data = response.json()
-    employee_name = employee_data.get('name')
+# Extract the employee's name from the data
+employee_name = data['name']
 
-    url = 'https://jsonplaceholder.typicode.com/todos?userId={}'.format(employee_id)
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("Error: Unable to fetch data from the API")
-        return
+# Send another GET request to the API to get the todo data
+todos_response = requests.get(
+    'https://jsonplaceholder.typicode.com/todos?userId=' + employee_id)
 
-    todos = response.json()
-    total_tasks = len(todos)
-    completed_tasks = [todo['title'] for todo in todos if todo['completed']]
+# Parse the todo data as JSON
+todos_data = todos_response.json()
 
-    print("Employee {} is done with tasks({}/{}):".format(employee_name, len(completed_tasks), total_tasks))
-    for task in completed_tasks:
-        print("\t{}".format(task))
+# Calculate the total number of tasks
+total_todos = str(len(todos_data))
 
+# Calculate the number of completed tasks
+completed_todos = str(sum(1 for task in todos_data if task['completed']))
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 0-gather_data_from_an_API.py <employee_id>")
-        sys.exit(1)
+# Print the first line of the output
+print("Employee " + employee_name + " is done with tasks(" +
+      completed_todos + "/" + total_todos + "):")
 
-    employee_id = sys.argv[1]
-    fetch_todo_list_progress(employee_id)
+# Print the title of each completed task
+for task in todos_data:
+    if task['completed']:
+        print('\t ' + task['title'])
+
+if __name__ == '__main__':
+    pass
