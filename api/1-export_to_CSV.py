@@ -1,60 +1,52 @@
 #!/usr/bin/python3
 """
-This script fetches data from a REST API for a given employee
-q
-ID, prints the employee's TODO list progress,
-and exports the data to a CSV file.
-
-Usage: python3 1-export_to-CSV.py [employee_id]
-
-The CSV file will have the following format: "USER_ID",
-"USERNAME","TASK_COMPLETED_STATUS","TASK_TITLE"
+Module: 1-export_to_CSV
 """
+
 import csv
 import requests
 import sys
 
 
-# Get the employee id
-employee_id = sys.argv[1]
-# Set the url and get a respnse
-user_response = requests.get(
-    f'https://jsonplaceholder.typicode.com/users/{employee_id}')
-# Get data in json form
+def fetch_todo_list_progress(employee_id):
+    """
+    Fetches TODO list progress for a given employee ID from a REST API and exports it to a CSV file.
 
-data = user_response.json()
-# Get the name of the employee
-employee_name = data['name']
+    Args:
+        employee_id (int): The ID of the employee.
 
-# Get the todo data fro the API
-todos_response = requests.get(
-    f'https://jsonplaceholder.typicode.com/todos?userId={employee_id}')
-# Get the data in json form
-todos_data = todos_response.json()
+    Returns:
+        None
+    """
+    url = 'https://jsonplaceholder.typicode.com/users/{}'.format(employee_id)
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("Error: Unable to fetch data from the API")
+        return
 
-# Get the total number of tasks
-total_todos = len(todos_data)
-# Get the number of completed tasks
-ok_todos = sum(1 for task in todos_data if task['completed'])
+    employee_data = response.json()
+    username = employee_data.get('username')
 
-# Print the first line of the output
-print(
-    f'Employee {employee_name} is done with tasks({ok_todos}/{total_todos}):')
+    url = 'https://jsonplaceholder.typicode.com/todos?userId={}'.format(employee_id)
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("Error: Unable to fetch data from the API")
+        return
 
-# Print the title of each completed task
-for task in todos_data:
-    if task['completed']:
-        print('\t ' + task['title'])
+    todos = response.json()
 
-# Export using csv format
-with open('USER_ID.csv', 'w') as csvfile:
-    # Ceating a csv writer object
-    # Quoting=csv.QUOTE_ALL to quote all the fields
-    writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
-    for task in todos_data:
-        # Writing the fields to the csv file
-        writer.writerow([employee_id, employee_name, task['completed'],
-                         task['title']])
+    filename = "{}.csv".format(employee_id)
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["USER_ID", "USERNAME", "TASK_COMPLETED_STATUS", "TASK_TITLE"])
+        for todo in todos:
+            writer.writerow([employee_id, username, todo['completed'], todo['title']])
 
-if __name__ == '__main__':
-    pass
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 1-export_to_CSV.py <employee_id>")
+        sys.exit(1)
+
+    employee_id = sys.argv[1]
+    fetch_todo_list_progress(employee_id)
