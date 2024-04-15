@@ -1,60 +1,59 @@
 #!/usr/bin/python3
 """
-This script fetches data from a REST API for a given employee
-q
-ID, prints the employee's TODO list progress,
+This script fetches the TODO list progress for a given employee ID
 and exports the data to a CSV file.
-
-Usage: python3 1-export_to-CSV.py [employee_id]
-
-The CSV file will have the following format: "USER_ID",
-"USERNAME","TASK_COMPLETED_STATUS","TASK_TITLE"
 """
 import csv
-import requests
+import json
 import sys
+import urllib.request
 
+def get_employee_todo_progress(employee_id):
+    """
+    Fetch the TODO list progress for the given employee ID and export it to a CSV file.
 
-# Get the employee id
-employee_id = sys.argv[1]
-# Set the url and get a respnse
-user_response = requests.get(
-    f'https://jsonplaceholder.typicode.com/users/{employee_id}')
-# Get data in json form
+    Args:
+        employee_id (int): The ID of the employee.
 
-data = user_response.json()
-# Get the name of the employee
-employee_name = data['name']
+    Returns:
+        None
+    """
+    # API endpoint
+    url = f'https://jsonplaceholder.typicode.com/users/{employee_id}/todos'
 
-# Get the todo data fro the API
-todos_response = requests.get(
-    f'https://jsonplaceholder.typicode.com/todos?userId={employee_id}')
-# Get the data in json form
-todos_data = todos_response.json()
+    # Fetch data from the API
+    try:
+        with urllib.request.urlopen(url) as response:
+            todos = json.load(response)
+    except urllib.error.HTTPError:
+        print(f"No user found with ID {employee_id}")
+        return
 
-# Get the total number of tasks
-total_todos = len(todos_data)
-# Get the number of completed tasks
-ok_todos = sum(1 for task in todos_data if task['completed'])
+    # Get the employee's name
+    try:
+        employee_name = next(user['name'] for user in todos if user['id'] == employee_id)
+    except StopIteration:
+        employee_name = f"Employee {employee_id}"
 
-# Print the first line of the output
-print(
-    f'Employee {employee_name} is done with tasks({ok_todos}/{total_todos}):')
+    # Export the data to a CSV file
+    with open(f"{employee_id}.csv", "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["USER_ID", "USERNAME", "TASK_COMPLETED_STATUS", "TASK_TITLE"])
 
-# Print the title of each completed task
-for task in todos_data:
-    if task['completed']:
-        print('\t ' + task['title'])
+        for task in todos:
+            writer.writerow([
+                task["userId"],
+                employee_name,
+                str(task["completed"]),
+                task["title"]
+            ])
 
-# Export using csv format
-with open('USER_ID.csv', 'w') as csvfile:
-    # Ceating a csv writer object
-    # Quoting=csv.QUOTE_ALL to quote all the fields
-    writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
-    for task in todos_data:
-        # Writing the fields to the csv file
-        writer.writerow([employee_id, employee_name, task['completed'],
-                         task['title']])
+    print(f"CSV file '{employee_id}.csv' created successfully.")
 
 if __name__ == '__main__':
-    pass
+    if len(sys.argv) != 2 or not sys.argv[1].isdigit():
+        print("Usage: python 1-export_to_CSV.py <employee_id>")
+        sys.exit(1)
+
+    employee_id = int(sys.argv[1])
+    get_employee_todo_progress(employee_id)
