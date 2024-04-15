@@ -2,26 +2,41 @@
 import requests
 import sys
 
-def fetch_todo_list_progress(employee_id):
-    url = 'https://jsonplaceholder.typicode.com/users/{}/todos'.format(employee_id)
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("Error: Unable to fetch data from the API")
-        return
 
-    todos = response.json()
-    employee_name = todos[0]['username']
-    total_tasks = len(todos)
-    completed_tasks = [todo['title'] for todo in todos if todo['completed']]
+# Get the employee ID from the command line arguments
+employee_id = sys.argv[1]
 
-    print("Employee {} is done with tasks({}/{}):".format(employee_name, len(completed_tasks), total_tasks))
-    for task in completed_tasks:
-        print("\t{}".format(task))
+# Send a GET request to the API to get the user data
+user_response = requests.get(
+    'https://jsonplaceholder.typicode.com/users/' + employee_id)
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 0-gather_data_from_an_API.py <employee_id>")
-        sys.exit(1)
-    
-    employee_id = sys.argv[1]
-    fetch_todo_list_progress(employee_id)
+# Parse the response data as JSON
+data = user_response.json()
+
+# Extract the employee's name from the data
+employee_name = data['name']
+
+# Send another GET request to the API to get the todo data
+todos_response = requests.get(
+    'https://jsonplaceholder.typicode.com/todos?userId=' + employee_id)
+
+# Parse the todo data as JSON
+todos_data = todos_response.json()
+
+# Calculate the total number of tasks
+total_todos = str(len(todos_data))
+
+# Calculate the number of completed tasks
+completed_todos = str(sum(1 for task in todos_data if task['completed']))
+
+# Print the first line of the output
+print("Employee " + employee_name + " is done with tasks(" +
+      completed_todos + "/" + total_todos + "):")
+
+# Print the title of each completed task
+for task in todos_data:
+    if task['completed']:
+        print('\t ' + task['title'])
+
+if __name__ == '__main__':
+    pass
