@@ -1,24 +1,53 @@
 #!/usr/bin/python3
-"""Script to export data i  the JSON format"""
+"""Retrieves and exports an employee's TODO list progress in JSON format"""
+import json
+import requests
+import sys
+
+
+def get_employee_todos(employee_id):
+    """Retrieves the employee's todos from the API"""
+    url = f"https://jsonplaceholder.typicode.com/todos?userId={employee_id}"
+    response = requests.get(url)
+    todos = response.json()
+    return todos
+
+
+def get_employee_name(employee_id):
+    """Retrieves the employee's name from the API"""
+    url = f"https://jsonplaceholder.typicode.com/users/{employee_id}"
+    response = requests.get(url)
+    employee = response.json()
+    return f"{employee.get('name')}"
+
+
+def export_todo_progress(employee_id):
+    """Exports the employee's TODO list progress in JSON format"""
+    todos = get_employee_todos(employee_id)
+    employee_name = get_employee_name(employee_id)
+    todo_data = []
+
+    for task in todos:
+        task_dict = {
+            "task": task.get("title"),
+            "completed": task.get("completed"),
+            "username": employee_name,
+        }
+        todo_data.append(task_dict)
+
+    filename = f"{employee_id}.json"
+    todo_json = {str(employee_id): todo_data}
+
+    with open(filename, mode="w") as jsonfile:
+        json.dump(todo_json, jsonfile)
 
 
 if __name__ == "__main__":
-    import json
-    import requests
-    from sys import argv
-
-    u_id = argv[1]
-    api_url = "https://jsonplaceholder.typicode.com/users/{}".format(u_id)
-    api_url2 = "https://jsonplaceholder.typicode.com/todos?userId={}"\
-        .format(u_id)
-    response = requests.get(api_url).json()
-    EMPLOYEE_NAME = response.get('username')
-    response = requests.get(api_url2).json()
-    f_name = u_id + '.json'
-    u_list = {u_id: []}
-    for info in response:
-        dic = {"task": info.get('title'), "completed": info.get('completed'),
-               "username": EMPLOYEE_NAME}
-        u_list.get(u_id).append(dic)
-    with open(f_name, 'w', encoding='utf-8') as f:
-        json.dump(u_list, f)
+    if len(sys.argv) < 2:
+        print("Usage: python3 2-export_to_JSON.py <employee_id>")
+    else:
+        try:
+            employee_id = int(sys.argv[1])
+            export_todo_progress(employee_id)
+        except ValueError:
+            print("Employee ID must be an integer")
