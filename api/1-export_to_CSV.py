@@ -1,40 +1,59 @@
 #!/usr/bin/python3
 """
-This script exports tasks data of a given user to a CSV file.
+This script fetches the TODO list progress for a given employee ID
+and exports the data to a CSV file.
 """
-
 import csv
+import json
 import sys
-import requests
+import urllib.request
 
-def export_tasks_to_csv(user_id):
+def get_employee_todo_progress(employee_id):
     """
-    Fetches tasks data of the given user ID and exports it to a CSV file.
+    Fetch the TODO list progress for the given employee ID and export it to a CSV file.
 
     Args:
-        user_id (int): The ID of the user whose tasks are to be exported.
+        employee_id (int): The ID of the employee.
+
+    Returns:
+        None
     """
-    # Fetch user data
-    response = requests.get(f"https://jsonplaceholder.typicode.com/users/{user_id}")
-    user_data = response.json()
-    username = user_data.get('username')
+    # API endpoint
+    url = f'https://jsonplaceholder.typicode.com/users/{employee_id}/todos'
 
-    # Fetch tasks data
-    response = requests.get(f"https://jsonplaceholder.typicode.com/todos?userId={user_id}")
-    tasks_data = response.json()
+    # Fetch data from the API
+    try:
+        with urllib.request.urlopen(url) as response:
+            todos = json.load(response)
+    except urllib.error.HTTPError:
+        print(f"No user found with ID {employee_id}")
+        return
 
-    # Write tasks data to CSV
-    filename = f"{user_id}.csv"
-    with open(filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
+    # Get the employee's name
+    try:
+        employee_name = next(user['name'] for user in todos if user['id'] == employee_id)
+    except StopIteration:
+        employee_name = f"Employee {employee_id}"
+
+    # Export the data to a CSV file
+    with open(f"{employee_id}.csv", "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
         writer.writerow(["USER_ID", "USERNAME", "TASK_COMPLETED_STATUS", "TASK_TITLE"])
-        for task in tasks_data:
-            writer.writerow([user_id, username, task.get("completed"), task.get("title")])
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 script.py <USER_ID>")
+        for task in todos:
+            writer.writerow([
+                task["userId"],
+                employee_name,
+                str(task["completed"]),
+                task["title"]
+            ])
+
+    print(f"CSV file '{employee_id}.csv' created successfully.")
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2 or not sys.argv[1].isdigit():
+        print("Usage: python 1-export_to_CSV.py <employee_id>")
         sys.exit(1)
 
-    user_id = sys.argv[1]
-    export_tasks_to_csv(user_id)
+    employee_id = int(sys.argv[1])
+    get_employee_todo_progress(employee_id)
