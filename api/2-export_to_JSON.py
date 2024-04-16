@@ -51,4 +51,3 @@ if __name__ == "__main__":
             export_todo_progress(employee_id)
         except ValueError:
             print("Employee ID must be an integer")
-
