@@ -22,4 +22,3 @@ if __name__ == "__main__":
         u_list.get(u_id).append(dic)
     with open(f_name, 'w', encoding='utf-8') as f:
         json.dump(u_list, f)
-
