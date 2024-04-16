@@ -1,33 +1,32 @@
 #!/usr/bin/python3
-import json
-import requests
 
-ROOT_URL = "https://jsonplaceholder.typicode.com/"
-
-TODOS = requests.get(f'{ROOT_URL}todos/').json()
-USERNAMES = requests.get(f'{ROOT_URL}users/').json()
+"""Script to export data in the JSON format"""
 
 if __name__ == "__main__":
+    import json
+    import os
+    import requests
     from sys import argv
 
-    USER_ID = int(argv[1])
+    try:
+        u_id = argv[1]
+        api_url = f"https://jsonplaceholder.typicode.com/users/{u_id}"
+        api_url2 = f"https://jsonplaceholder.typicode.com/todos?userId={u_id}"
 
-    USERNAME = USERNAMES[USER_ID - 1]['username']
-    USER_TASKS = tuple(
-        task
-        for task in TODOS
-        if task['userId'] == USER_ID
-    )
+        response = requests.get(api_url).json()
+        EMPLOYEE_NAME = response.get('username')
+        response = requests.get(api_url2).json()
 
-    result = {
-        str(USER_ID): [
-            {
-                'task': task['title'],
-                'completed': task['completed'],
-                'username': USERNAME
-            } for task in USER_TASKS
-        ]
-    }
+        f_name = os.path.join(f"{u_id}.json")
+        u_list = {u_id: [{"task": task["title"], "completed": task["completed"], "username": EMPLOYEE_NAME} for task in response]}
 
-    with open(f'{USER_ID}.json', "w") as output_file:
-        json.dump(result, output_file)
+        with open(f_name, 'w', encoding='utf-8') as f:
+            json.dump(u_list, f, indent=4)
+
+        print(f"JSON file '{f_name}' created successfully.")
+    except (IndexError, ValueError):
+        print("Usage: python script.py <employee_id>")
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
