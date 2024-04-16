@@ -5,9 +5,8 @@ from sys import argv
 import csv
 
 
-def information_employee():
+def information_employee(id_employee):
     """Returns information about employees"""
-    id_employee = int(argv[1])
     employee_name = ""
     task_data = []
 
@@ -22,7 +21,7 @@ def information_employee():
         response_json_tod = response_two.json()
 
         for user in response_json_usr:
-            if (user['id'] == id_employee):
+            if user['id'] == id_employee:
                 employee_name = user['username']
 
                 for tod in response_json_tod:
@@ -47,4 +46,9 @@ def export_to_csv(user_id, employee_name, task_data):
 
 
 if __name__ == "__main__":
-    information_employee()
+    if len(argv) != 2:
+        print("Usage: python script.py <employee_id>")
+        exit(1)
+
+    employee_id = int(argv[1])
+    information_employee(employee_id)
