@@ -1,54 +1,24 @@
 #!/usr/bin/python3
-"""Script to export data in the CSV format"""
-from requests import get
-from sys import argv
+"""Module to create CSV"""
 import csv
-
-
-def information_employee(id_employee):
-    """Returns information about employees"""
-    employee_name = ""
-    task_data = []
-
-    url_users = 'https://jsonplaceholder.typicode.com/users'
-    url_todos = 'https://jsonplaceholder.typicode.com/todos'
-
-    response_one = get(url_users)
-    response_two = get(url_todos)
-
-    if response_one.status_code == 200:
-        response_json_usr = response_one.json()
-        response_json_tod = response_two.json()
-
-        for user in response_json_usr:
-            if user['id'] == id_employee:
-                employee_name = user['username']
-
-                for tod in response_json_tod:
-                    if tod['userId'] == id_employee:
-                        task_data.append(tod)
-
-        # Call the function to export data to CSV
-        export_to_csv(id_employee, employee_name, task_data)
-
-
-def export_to_csv(user_id, employee_name, task_data):
-    """Exports the employee information to a CSV file"""
-    filename = f"{user_id}.csv"
-
-    with open(filename, mode='w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile, delimiter=',',
-                                quotechar='"', quoting=csv.QUOTE_ALL)
-
-        for task in task_data:
-            csv_writer.writerow(
-                [user_id, employee_name, task['completed'], task['title']])
-
+import requests
+import sys
 
 if __name__ == "__main__":
-    if len(argv) != 2:
-        print("Usage: python script.py <employee_id>")
-        exit(1)
+    user_id = sys.argv[1]
+    EMPLOYEE_DATA = requests.get(
+        f'https://jsonplaceholder.typicode.com/users?Id={user_id}').json()
 
-    employee_id = int(argv[1])
-    information_employee(employee_id)
+    todo_DATA = requests.get(
+        f'https://jsonplaceholder.typicode.com/todos?userId={user_id}').json()
+
+    EMPLOYEE_NAME = EMPLOYEE_DATA[int(user_id)-1].get("name")
+    USER_ID = EMPLOYEE_DATA[int(user_id)-1].get("id")
+    USERNAME = EMPLOYEE_DATA[int(user_id)-1].get("username")
+
+    with open(f'{user_id}.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
+        for tasks in todo_DATA:
+            writer.writerow(
+                [USER_ID, USERNAME,
+                 tasks.get('completed'), tasks.get('title')])
